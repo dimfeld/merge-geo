@@ -1,5 +1,5 @@
 import { createReadStream } from 'fs';
-import { readFile } from 'fs/promises';
+import { readFile, writeFile } from 'fs/promises';
 import yargs from 'yargs';
 import type { Feature, GeoJSON } from 'geojson';
 import esMain from 'es-main';
@@ -135,10 +135,19 @@ if (esMain(import.meta)) {
     exclude: args.exclude as string[],
   };
 
-  let output = await mergeGeo(options).catch((e) => {
+  let result = await mergeGeo(options).catch((e) => {
     console.error(e);
     process.exit(1);
   });
 
-  console.log(JSON.stringify(output, null, 2));
+  if (args.replace) {
+    args.output = args.json;
+  }
+
+  const output = JSON.stringify(result, null, 2);
+  if (args.output) {
+    await writeFile(args.output, output);
+  } else {
+    console.log(output);
+  }
 }

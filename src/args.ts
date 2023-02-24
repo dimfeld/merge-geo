@@ -24,11 +24,13 @@ export function parseArgs() {
         'One or more Javascript boolean expressions that will be used to filter the CSV rows.',
     })
     .option('csv', {
+      alias: 'c',
       type: 'array',
       description: 'The paths to one or more CSV files',
       demandOption: true,
     })
     .option('json', {
+      alias: 'j',
       type: 'string',
       description: 'The path to a GeoJSON file',
       demandOption: true,
@@ -58,5 +60,15 @@ export function parseArgs() {
     .option('strict', {
       type: 'boolean',
       description: 'Throw an error if a CSV row does not match a GeoJSON Feature',
+    })
+    .option('replace', {
+      alias: 'r',
+      type: 'boolean',
+      description: 'Replace the input GeoJSON file with the merged output',
+    })
+    .option('output', {
+      alias: 'o',
+      type: 'string',
+      description: 'Write the output to this file instead of the terminal',
     }).argv;
 }
