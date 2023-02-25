@@ -1,6 +1,6 @@
+#!/usr/bin/env node
 import { createReadStream } from 'fs';
 import { readFile, writeFile } from 'fs/promises';
-import yargs from 'yargs';
 import type { Feature, GeoJSON } from 'geojson';
 import esMain from 'es-main';
 import { parseArgs } from './args.js';
@@ -20,10 +20,39 @@ export interface MergeGeoOptions {
   csvId?: string;
   /** Throw an error if a CSV row does not match a GeoJSON Feature */
   strict?: boolean;
+  /** Omit empty values from the CSV instead of adding an empty string */
+  omitEmpty?: boolean;
+  /** A prefix to add to each column name before adding to the GeoJSON Feature */
+  prefix?: string;
   /** A list of columns to include from the CSV */
   include?: string[];
   /** A list of columns to exclude from the CSV */
   exclude?: string[];
+  /** Attempt to convert all CSV values to numbers and booleans */
+  autoCoerce?: boolean;
+  /** Convert these columns to numbers and booleans. In strict mode, fail if it can not be coerced. */
+  coerceColumns?: string[];
+}
+
+function tryCoerce(s: string, mustSucceed?: boolean): string | boolean | number {
+  if (!s.length) {
+    return s;
+  } else if (s === 'true') {
+    return true;
+  } else if (s === 'false') {
+    return false;
+  }
+
+  let possibleNumber = Number(s);
+  if (!Number.isNaN(possibleNumber)) {
+    return possibleNumber;
+  }
+
+  if (mustSucceed) {
+    throw new Error(`Could not coerce ${s} to a number or boolean`);
+  }
+
+  return s;
 }
 
 async function parseOneCsv(
@@ -33,7 +62,7 @@ async function parseOneCsv(
 ) {
   let filters: Function[] = [];
   let headers: string[] = [];
-  let propHeaders: string[] = [];
+  let propHeaders: { input: string; output: string; coerce: boolean }[] = [];
   let csvId: string;
   let line = 0;
 
@@ -49,17 +78,22 @@ async function parseOneCsv(
       throw new Error(`Could not find CSV column ${csvId} in file ${csvPath}`);
     }
 
-    propHeaders = headers;
+    propHeaders = headers.map((h) => ({
+      input: h,
+      output: options.prefix ? `${options.prefix}${h}` : h,
+      coerce: options.coerceColumns?.includes(h) ?? false,
+    }));
+
     if (options.include) {
-      propHeaders = propHeaders.filter((h) => options.include!.includes(h));
+      propHeaders = propHeaders.filter((h) => options.include!.includes(h.input));
     }
 
     if (options.exclude) {
-      propHeaders = propHeaders.filter((h) => !options.exclude!.includes(h));
+      propHeaders = propHeaders.filter((h) => !options.exclude!.includes(h.input));
     }
   }
 
-  function handleData(data: Record<string, string | number>) {
+  function handleData(data: Record<string, string>) {
     line++;
 
     if (filters.some((f) => !f(...headers.map((h) => data[h])))) {
@@ -80,8 +114,16 @@ async function parseOneCsv(
       feature.properties = {};
     }
 
-    for (let column of propHeaders) {
-      feature.properties[column] = data[column];
+    for (let { input, output, coerce } of propHeaders) {
+      let value: string | number | boolean = data[input];
+
+      if (!value.length && options.omitEmpty) {
+        continue;
+      } else if (coerce || options.autoCoerce) {
+        value = tryCoerce(value, coerce && options.strict);
+      }
+
+      feature.properties[output] = value;
     }
   }
 
@@ -133,6 +175,10 @@ if (esMain(import.meta)) {
     strict: args.strict,
     include: args.include as string[],
     exclude: args.exclude as string[],
+    coerceColumns: args.coerceColumns as string[],
+    autoCoerce: args['autocoerce'],
+    omitEmpty: args.omitEmpty,
+    prefix: args.prefix,
   };
 
   let result = await mergeGeo(options).catch((e) => {

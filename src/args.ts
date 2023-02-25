@@ -36,8 +36,14 @@ export function parseArgs() {
       demandOption: true,
     })
     .option('autocoerce', {
+      alias: 'ac',
       type: 'boolean',
       description: 'Attempt to convert all CSV values to numbers and booleans',
+    })
+    .option('coerce', {
+      alias: 'c',
+      type: 'array',
+      description: 'Attempt to convert these CSV columns to numbers and booleans',
     })
     .option('delimiter', {
       type: 'string',
@@ -53,10 +59,6 @@ export function parseArgs() {
       type: 'array',
       description: 'A list of CSV columns to exclude',
     })
-    .option('coerce-columns', {
-      type: 'array',
-      description: 'Attempt to convert these CSV columns to numbers and booleans',
-    })
     .option('strict', {
       type: 'boolean',
       description: 'Throw an error if a CSV row does not match a GeoJSON Feature',
@@ -70,5 +72,13 @@ export function parseArgs() {
       alias: 'o',
       type: 'string',
       description: 'Write the output to this file instead of the terminal',
+    })
+    .option('prefix', {
+      type: 'string',
+      description: 'A prefix to add to all CSV column names when adding them to Features',
+    })
+    .option('omit-empty', {
+      type: 'boolean',
+      description: 'Ignore empty values in the CSV instead of adding empty strings',
     }).argv;
 }
