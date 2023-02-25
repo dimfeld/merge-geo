@@ -4,6 +4,7 @@ import { hideBin } from 'yargs/helpers';
 export function parseArgs() {
   return yargs(hideBin(process.argv))
     .version('1.0.0')
+    .wrap(Math.min(process.stdout.columns, 160))
     .help()
     .strict()
     .usage('Merge data from CSV files into GeoJSON Features')
