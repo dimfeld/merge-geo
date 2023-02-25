@@ -2,6 +2,22 @@
 
 A utility to read CSV data about geographic locations and merge it into a GeoJSON FeatureCollection.
 
+## Example
+
+```bash
+$ npm -g install merge-geo
+$ merge-geo
+  --feature-id CBSAFP # The property containing the feature ID, if not present as `id` \
+  --csv-id CBSA # CSV column containing the ID \
+  --filter '!STCOU' # Javascript expression to filter CSV rows  \
+   -c cbsa-est2021-alldata.csv # Input CSV data \
+   -j cbsa.json # Input GeoJSON \
+  --autocoerce # Automatically convert strings to numbers when possible \
+> cbsa_new.json
+```
+
+## Usage
+
 ```
 Merge data from CSV files into GeoJSON Features
 
